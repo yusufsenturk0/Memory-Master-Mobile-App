@@ -1,7 +1,9 @@
 package com.example.memortymaster
 
 import android.os.Bundle
+import android.os.SystemClock
 import android.renderscript.ScriptGroup.Binding
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -26,7 +28,12 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-
+        //Timer Created
+        binding.buttonStart.setOnClickListener {
+            binding.chronomater.base=SystemClock.elapsedRealtime()
+            binding.chronomater.start()
+        }
 
     }
+
 }
