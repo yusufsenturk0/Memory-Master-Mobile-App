@@ -2,29 +2,32 @@ package com.example.memortymaster
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.content.Context
-import android.graphics.drawable.Drawable
-import android.media.Image
+import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
-import android.renderscript.ScriptGroup.Binding
-import android.view.View
 import android.widget.GridLayout
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.accessibility.AccessibilityManagerCompat.TouchExplorationStateChangeListener
 import com.example.memortymaster.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+
+
+    private var isRunning =false
+    private var score : Long =0
+    private val intent = Intent()
+    private var clicked : Boolean=false
+    private val imageViews :ArrayList<ImageView> = arrayListOf()
     private var opendCard=0
     private  val  opendCardList: ArrayList<ImageView> = arrayListOf()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +35,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+
 
         enableEdgeToEdge()
 
@@ -71,61 +76,85 @@ class MainActivity : AppCompatActivity() {
                     setMargins(8, 8, 8, 8)
 
                 }
+
+
+
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 setImageDrawable(ContextCompat.getDrawable(context, image))
                 id = uniqId
                 this.alpha=0.0f
                 uniqId++
             }
+            imageViews.add(imageView)
             imageView.setOnClickListener {
-                if(imageView.alpha==1.0f){
-                    println("skdjfhksfjkls")
-                    Toast.makeText(this@MainActivity,"Açılmış Görsele Neden Tıklıyon",Toast.LENGTH_LONG).show()
-                }
-                else {
-                    opendCard++
-                    if(opendCard<2){
-                        opendCardList.add(imageView)
+                if(clicked){
+                    if(imageView.alpha==1.0f){
 
-                        imageView.alpha = if (imageView.alpha == 1.0f) {
-                            animateAlpha(imageView,1.0f)
-                            0.0f // Görünmez yap
+                        Toast.makeText(this@MainActivity,"Açılmış Görsele Neden Tıklıyon",Toast.LENGTH_SHORT).show()
+                    }
+                    else {
+                        imageView.isClickable=false
 
-                        } else {
-                            animateAlpha(imageView,0.0f)
-                            1.0f // Görünür yap
-                        }
-                    }else{
-                        opendCardList.add(imageView)
+                        opendCard++
+                        if(opendCard<2){
+                            opendCardList.add(imageView)
 
-                        imageView.alpha = if (imageView.alpha == 1.0f) {
-                            animateAlpha(imageView,1.0f)
-                            0.0f // Görünmez yap
+                            imageView.alpha = if (imageView.alpha == 1.0f) {
+                                animateAlpha(imageView,1.0f)
+                                0.0f // Görünmez yap
 
-                        } else {
-                            animateAlpha(imageView,0.0f)
-                            1.0f // Görünür yap
-                        }
-
-                        val image1=opendCardList[0].drawable
-                        val image2=opendCardList[1].drawable
-
-                        println(image1)
-                        println(image2)
-
-                        if(image1?.constantState == image2?.constantState){
-
-                            opendCardList.clear()
-                            opendCard=0
+                            } else {
+                                animateAlpha(imageView,0.0f)
+                                1.0f // Görünür yap
+                            }
                         }else{
-                            animateAlpha(opendCardList[0],1.0f)
-                            animateAlpha(opendCardList[1],1.0f)
+                            opendCardList.add(imageView)
 
-                            opendCardList.clear()
-                            opendCard=0
+                            imageView.alpha = if (imageView.alpha == 1.0f) {
+                                animateAlpha(imageView,1.0f)
+                                0.0f // Görünmez yap
+
+                            } else {
+                                animateAlpha(imageView,0.0f)
+                                1.0f // Görünür yap
+                            }
+
+                            val image1=opendCardList[0].drawable
+                            val image2=opendCardList[1].drawable
+
+
+
+                            if(image1?.constantState == image2?.constantState){
+
+                                opendCardList.clear()
+                                opendCard=0
+                                //oyun bitti ise activiteyi oyunu tekrar başlatıyor
+                                if(gameFinish(imageViews)){
+
+                                    runAfterDelay(500){
+                                        finish()
+                                    }
+
+                                }
+                            }else{
+
+                                for(image in opendCardList){
+                                    image.isClickable=true
+                                }
+
+                                animateAlpha(opendCardList[0],1.0f)
+                                animateAlpha(opendCardList[1],1.0f)
+
+                                opendCardList.clear()
+                                opendCard=0
+                            }
                         }
                     }
+                }else{
+                    Toast.makeText(this@MainActivity,"Başlamadan önce süreyi başlatınız!!!",Toast.LENGTH_SHORT).show()
+
                 }
+
 
 
 
@@ -138,8 +167,14 @@ class MainActivity : AppCompatActivity() {
 
         //Timer Created
         binding.buttonStart.setOnClickListener {
-            binding.chronomater.base=SystemClock.elapsedRealtime()
-            binding.chronomater.start()
+            if(!isRunning){
+                isRunning=true
+                clicked=true
+                binding.chronomater.base=SystemClock.elapsedRealtime()
+                binding.chronomater.start()
+                dontShowImg(imageViews)
+            }
+
         }
 
     }
@@ -157,12 +192,59 @@ class MainActivity : AppCompatActivity() {
 
 
         val alphaAnimator = ObjectAnimator.ofFloat(imageView, "alpha", start, finish)
-        alphaAnimator.duration = 1000 // 1 saniye süre
+        alphaAnimator.duration = 500 // 0.5 saniye süre
 
         // AnimatorSet ile animasyonu çalıştır
         val animatorSet = AnimatorSet()
         animatorSet.play(alphaAnimator)
         animatorSet.start()
+    }
+
+    //at beginning of app we change the visibility of the image
+    private fun dontShowImg(images: List<ImageView>){
+        for (image in images){
+            runAfterDelay(200){
+                animateAlpha(image,0.0f)
+            }
+
+        }
+        runAfterDelay(200){
+
+        }
+        for (image in images){
+            runAfterDelay(200){
+                animateAlpha(image,1.0f)
+            }
+
+        }
+    }
+
+
+    private fun runAfterDelay(delayMillis: Long, action: () -> Unit) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            action()
+        }, delayMillis)
+    }
+    private fun gameFinish(images :List<ImageView>) : Boolean{
+        for (image in images){
+            if(image.alpha==0.0f){
+                return false
+            }
+        }
+        isRunning=false
+        binding.chronomater.stop()
+
+        score= (SystemClock.elapsedRealtime() - binding.chronomater.base)
+
+
+
+        binding.textViewScore.text="Max Score : ${score/1000}"
+
+
+
+
+
+        return true
     }
 
 
