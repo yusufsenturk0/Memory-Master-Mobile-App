@@ -21,8 +21,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-
-
+    private  var scoreId :Long=0
+    private lateinit var dataBase: DataBase
     private var isRunning =false
     private var score : Long =0
     private val intent = Intent()
@@ -36,8 +36,16 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
+        dataBase = DataBase(this)
+        if (dataBase.isScorePresent()) {
+            // Mevcut bir skor varsa, bu skoru kullanın
+            scoreId = dataBase.getFirstRecordId() ?: 0
+        } else {
+            // Mevcut bir skor yoksa yeni bir skor ekleyin
+            scoreId = dataBase.insertLongValue(0)
+        }
 
-
+        printMaxScore()
         enableEdgeToEdge()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -131,8 +139,8 @@ class MainActivity : AppCompatActivity() {
                                 //oyun bitti ise activiteyi oyunu tekrar başlatıyor
                                 if(gameFinish(imageViews)){
 
-                                    runAfterDelay(500){
-                                        finish()
+                                    runAfterDelay(700){
+
                                     }
 
                                 }
@@ -173,6 +181,11 @@ class MainActivity : AppCompatActivity() {
                 binding.chronomater.base=SystemClock.elapsedRealtime()
                 binding.chronomater.start()
                 dontShowImg(imageViews)
+
+                for (image in imageViews){
+                    image.isClickable=true
+                }
+
             }
 
         }
@@ -235,10 +248,12 @@ class MainActivity : AppCompatActivity() {
         binding.chronomater.stop()
 
         score= (SystemClock.elapsedRealtime() - binding.chronomater.base)
+        if(score< dataBase.getFirstRecordId()!!){
+            dataBase.updateLongValue(scoreId,score)
+        }
 
 
-
-        binding.textViewScore.text="Max Score : ${score/1000}"
+        printMaxScore()
 
 
 
@@ -246,7 +261,13 @@ class MainActivity : AppCompatActivity() {
 
         return true
     }
-
+    private fun printMaxScore(){
+        val score = dataBase.getLongValue(scoreId) ?: 0
+        val seconds = (score / 1000) % 60
+        val minutes = (score / (1000 * 60)) % 60
+        val strScore = String.format("Max Score: %02d.%02d", minutes, seconds)
+        binding.textViewScore.text = strScore
+    }
 
 
 
