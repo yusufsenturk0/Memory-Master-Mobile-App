@@ -2,11 +2,12 @@ package com.example.memortymaster
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.content.Intent
+import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.View
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.Toast
@@ -21,11 +22,12 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+
     private  var scoreId :Long=0
     private lateinit var dataBase: DataBase
     private var isRunning =false
     private var score : Long =0
-    private val intent = Intent()
+    
     private var clicked : Boolean=false
     private val imageViews :ArrayList<ImageView> = arrayListOf()
     private var opendCard=0
@@ -35,6 +37,16 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        AlertDialog.Builder(this)
+            .setTitle("Hint")
+            .setMessage("Match the cards in the shortest time possible.")
+            .setPositiveButton("Okay") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+
+        val field=intent.getStringExtra("field")
 
         dataBase = DataBase(this)
         if (dataBase.isScorePresent()) {
@@ -56,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
         val gridLayout = findViewById<GridLayout>(R.id.gridLayout)
 
-        val images = listOf(
+        val images_fruits = listOf(
             R.drawable.ananas1,
             R.drawable.ananas1,
             R.drawable.elma1,
@@ -75,8 +87,34 @@ class MainActivity : AppCompatActivity() {
             R.drawable.uzum1,
 
         ).shuffled() // Resimleri karıştırmak için shuffled() kullanılır.
+        val images_emoji = listOf(
+            R.drawable.e1,
+            R.drawable.e1,
+            R.drawable.e2,
+            R.drawable.e2,
+            R.drawable.e3,
+            R.drawable.e3,
+            R.drawable.e4,
+            R.drawable.e4,
+            R.drawable.e5,
+            R.drawable.e5,
+            R.drawable.e6,
+            R.drawable.e6,
+            R.drawable.e7,
+            R.drawable.e7,
+            R.drawable.e8,
+            R.drawable.e8,
+
+            ).shuffled()
+        var images_chosen_subject= listOf<Int>()
+        if(field=="Emojies"){
+            images_chosen_subject=images_emoji
+        }else if(field=="Fruits"){
+            images_chosen_subject=images_fruits
+        }
+
         var uniqId=1
-        for (image in images) {
+        for (image in images_chosen_subject) {
             val imageView = ImageView(this).apply {
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 250 // Görüntü genişliği
@@ -172,25 +210,38 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
+        if(isRunning){
+            binding.buttonStart.visibility= View.INVISIBLE
+        }
         //Timer Created
         binding.buttonStart.setOnClickListener {
-            if(!isRunning){
-                isRunning=true
-                clicked=true
-                binding.chronomater.base=SystemClock.elapsedRealtime()
+            if(!isRunning) {
+                isRunning = true
+                if(binding.buttonStart.text == "ReStart"){
+
+                }
+
+                binding.buttonStart.visibility= View.VISIBLE
+                binding.buttonStart.text = "ReStart"
+
+                clicked = true
+                binding.chronomater.base = SystemClock.elapsedRealtime()
                 binding.chronomater.start()
                 dontShowImg(imageViews)
 
-                for (image in imageViews){
-                    image.isClickable=true
+                for (image in imageViews) {
+                    image.isClickable = true
                 }
-
             }
+
+
+
+
 
         }
 
     }
+
     private fun animateAlpha(imageView: ImageView,alpha : Float) {
         // Alpha değerini 0.0'dan 1.0'a değiştiren ObjectAnimator
          var start : Float
@@ -239,6 +290,7 @@ class MainActivity : AppCompatActivity() {
         }, delayMillis)
     }
     private fun gameFinish(images :List<ImageView>) : Boolean{
+        
         for (image in images){
             if(image.alpha==0.0f){
                 return false
@@ -248,9 +300,11 @@ class MainActivity : AppCompatActivity() {
         binding.chronomater.stop()
 
         score= (SystemClock.elapsedRealtime() - binding.chronomater.base)
-        if(score< dataBase.getFirstRecordId()!!){
+        if(score<dataBase.getLongValue(scoreId)!!){
             dataBase.updateLongValue(scoreId,score)
         }
+
+
 
 
         printMaxScore()
