@@ -3,6 +3,8 @@ package com.example.memortymaster
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.app.AlertDialog
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -22,12 +24,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-
+    private lateinit var combinedListEmoji: List<Int>
+    private lateinit var combinedListFruits: List<Int>
     private  var scoreId :Long=0
     private lateinit var dataBase: DataBase
     private var isRunning =false
     private var score : Long =0
-    
+    private var health :Int = 0
     private var clicked : Boolean=false
     private val imageViews :ArrayList<ImageView> = arrayListOf()
     private var opendCard=0
@@ -40,13 +43,28 @@ class MainActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle("Hint")
-            .setMessage("Match the cards in the shortest time possible.")
+            .setMessage("Match the cards in the shortest time possible.!!!(Watch your  heart)!!!")
             .setPositiveButton("Okay") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
 
         val field=intent.getStringExtra("field")
+        val field2=intent.getStringExtra("field2")
+
+        if (field2=="4x4"){
+            health=6
+            binding.healthGridLayout.columnCount=6
+            binding.gridLayout.columnCount=4
+            binding.gridLayout.rowCount=4
+        }else if(field2=="6x6"){
+            health=10
+            binding.healthGridLayout.columnCount=10
+            binding.healthGridLayout.rowCount=1
+            binding.gridLayout.columnCount=6
+            binding.gridLayout.rowCount=6
+
+        }
 
         dataBase = DataBase(this)
         if (dataBase.isScorePresent()) {
@@ -68,7 +86,7 @@ class MainActivity : AppCompatActivity() {
 
         val gridLayout = findViewById<GridLayout>(R.id.gridLayout)
 
-        val images_fruits = listOf(
+        var images_fruits = listOf(
             R.drawable.ananas1,
             R.drawable.ananas1,
             R.drawable.elma1,
@@ -87,7 +105,9 @@ class MainActivity : AppCompatActivity() {
             R.drawable.uzum1,
 
         ).shuffled() // Resimleri karıştırmak için shuffled() kullanılır.
-        val images_emoji = listOf(
+
+
+        var images_emoji = listOf(
             R.drawable.e1,
             R.drawable.e1,
             R.drawable.e2,
@@ -106,19 +126,34 @@ class MainActivity : AppCompatActivity() {
             R.drawable.e8,
 
             ).shuffled()
+        if(field2=="6x6"){
+            increaseCards(images_emoji,images_fruits)
+            images_emoji=combinedListEmoji
+            images_fruits=combinedListFruits
+        }
+        else{
+
+        }
+
         var images_chosen_subject= listOf<Int>()
         if(field=="Emojies"){
             images_chosen_subject=images_emoji
         }else if(field=="Fruits"){
             images_chosen_subject=images_fruits
         }
-
+        showHealth(health)
         var uniqId=1
         for (image in images_chosen_subject) {
             val imageView = ImageView(this).apply {
                 layoutParams = GridLayout.LayoutParams().apply {
-                    width = 250 // Görüntü genişliği
-                    height = 250 // Görüntü yüksekliği
+                   if(field2=="6x6"){
+                       width = 160 // Görüntü genişliği
+                       height = 160 // Görüntü yüksekliği
+                   }else{
+                       width = 250 // Görüntü genişliği
+                       height = 250 // Görüntü yüksekliği
+                   }
+
                     setMargins(8, 8, 8, 8)
 
                 }
@@ -171,6 +206,12 @@ class MainActivity : AppCompatActivity() {
 
 
                             if(image1?.constantState == image2?.constantState){
+                                health++
+                                if(health>9){
+                                    binding.healthGridLayout.columnCount=9
+                                    binding.healthGridLayout.rowCount=2
+                                }
+                                showHealth(health)
 
                                 opendCardList.clear()
                                 opendCard=0
@@ -183,6 +224,23 @@ class MainActivity : AppCompatActivity() {
 
                                 }
                             }else{
+
+                                health--
+                                if(health<9){
+                                    binding.healthGridLayout.columnCount=9
+                                    binding.healthGridLayout.rowCount=1
+                                }
+                                showHealth(health)
+                                if(health==0){
+                                    Toast.makeText(this@MainActivity,"Game Over",Toast.LENGTH_LONG).show()
+                                    binding.chronomater.stop()
+                                    runAfterDelay(1000){
+
+                                        val intent3= Intent(this,EntryActivity::class.java)
+                                        startActivity(intent3)
+                                    }
+                                }
+
 
                                 for(image in opendCardList){
                                     image.isClickable=true
@@ -197,7 +255,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }else{
-                    Toast.makeText(this@MainActivity,"Başlamadan önce süreyi başlatınız!!!",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity,"Start the timer before playing!!!",Toast.LENGTH_SHORT).show()
 
                 }
 
@@ -217,18 +275,19 @@ class MainActivity : AppCompatActivity() {
         binding.buttonStart.setOnClickListener {
             if(!isRunning) {
                 isRunning = true
-                if(binding.buttonStart.text == "ReStart"){
-
+                if(binding.buttonStart.text == "Home"){
+                    val intent2= Intent(this,EntryActivity::class.java)
+                    startActivity(intent2)
                 }
 
                 binding.buttonStart.visibility= View.VISIBLE
-                binding.buttonStart.text = "ReStart"
+                binding.buttonStart.text = "Home"
 
                 clicked = true
                 binding.chronomater.base = SystemClock.elapsedRealtime()
                 binding.chronomater.start()
                 dontShowImg(imageViews)
-
+                binding.chronomater.setTextColor(Color.BLACK)
                 for (image in imageViews) {
                     image.isClickable = true
                 }
@@ -262,6 +321,76 @@ class MainActivity : AppCompatActivity() {
         val animatorSet = AnimatorSet()
         animatorSet.play(alphaAnimator)
         animatorSet.start()
+    }
+    private fun showHealth(health : Int){
+        binding.healthGridLayout.removeAllViews()
+        for (Id in 1..health){
+            val imageView=ImageView(this).apply {
+                layoutParams=GridLayout.LayoutParams().apply {
+                    width=100
+                    height=100
+
+                    setMargins(4,4,4,4)
+                }
+
+                scaleType=ImageView.ScaleType.CENTER_CROP
+                setImageDrawable(ContextCompat.getDrawable(context,R.drawable.health))
+                id=Id
+
+            }
+            binding.healthGridLayout.addView(imageView)
+
+        }
+    }
+    private fun increaseCards(images_emoji: List<Int>,images_fruits: List<Int>) {
+
+        val images_emoji2= listOf(
+            R.drawable.e9,
+            R.drawable.e9,
+            R.drawable.e10,
+            R.drawable.e10,
+            R.drawable.e11,
+            R.drawable.e11,
+            R.drawable.e12,
+            R.drawable.e12,
+            R.drawable.e13,
+            R.drawable.e13,
+            R.drawable.e14,
+            R.drawable.e14,
+            R.drawable.e15,
+            R.drawable.e15,
+            R.drawable.e16,
+            R.drawable.e16,
+            R.drawable.e17,
+            R.drawable.e17,
+            R.drawable.e18,
+            R.drawable.e18,
+        ).shuffled().shuffled().shuffled()
+        val images_fruits2=listOf(
+            R.drawable.tropik,
+            R.drawable.tropik,
+            R.drawable.kiraz,
+            R.drawable.kiraz,
+            R.drawable.karpuz,
+            R.drawable.karpuz,
+            R.drawable.ayva,
+            R.drawable.ayva,
+            R.drawable.armut,
+            R.drawable.armut,
+            R.drawable.misir,
+            R.drawable.misir,
+            R.drawable.mandalina,
+            R.drawable.mandalina,
+            R.drawable.hinceviz,
+            R.drawable.hinceviz,
+            R.drawable.kayisi,
+            R.drawable.kayisi,
+            R.drawable.domates,
+            R.drawable.domates,
+        ).shuffled().shuffled().shuffled()
+
+        combinedListEmoji=images_emoji+images_emoji2
+        combinedListFruits=images_fruits+images_fruits2
     }
 
     //at beginning of app we change the visibility of the image
@@ -305,7 +434,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
+        binding.chronomater.setTextColor(Color.RED)
 
         printMaxScore()
 

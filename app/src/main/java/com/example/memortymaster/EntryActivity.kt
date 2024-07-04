@@ -26,14 +26,22 @@ class EntryActivity : AppCompatActivity() {
         }
         val intent= Intent(this , MainActivity::class.java)
 
+        binding.radioButton1.isChecked=true
+        binding.radioButton21.isChecked=true
+
         binding.buttonStart.setOnClickListener {
             val selectedRadioButtonId = binding.radioGroup.checkedRadioButtonId
-
+            val selectedRadioButtonId2=binding.radioGroup2.checkedRadioButtonId
 
             val selectedRadioButton = findViewById<RadioButton>(selectedRadioButtonId)
+            val selectedRadioButton2 = findViewById<RadioButton>(selectedRadioButtonId2)
+
             val selectedText = selectedRadioButton.text
+            val selectedText2 = selectedRadioButton2.text
 
             intent.putExtra("field",selectedText)
+            intent.putExtra("field2",selectedText2)
+
             startActivity(intent)
         }
 
